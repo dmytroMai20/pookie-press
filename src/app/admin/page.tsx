@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Horizon, FrequencyBucket } from "@/domain/services/AnalyticsService";
 import { StatsCards } from "./components/StatsCards";
@@ -27,28 +27,32 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const fetchAnalytics = useCallback(async (h: Horizon) => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/admin/analytics?horizon=${h}`);
-      if (res.status === 401) {
-        router.replace("/admin/login");
-        return;
-      }
-      if (res.ok) {
-        const json: AnalyticsResponse = await res.json();
-        setData(json);
-      }
-    } catch {
-      // silently fail
-    } finally {
-      setLoading(false);
-    }
-  }, [router]);
-
   useEffect(() => {
-    fetchAnalytics(horizon);
-  }, [horizon, fetchAnalytics]);
+    let ignore = false;
+    const controller = new AbortController();
+    async function fetchAnalytics() {
+      try {
+        const res = await fetch(`/api/admin/analytics?horizon=${horizon}`, {
+          signal: controller.signal,
+        });
+        if (ignore) return;
+        if (res.status === 401) {
+          router.replace("/admin/login");
+          return;
+        }
+        if (res.ok) {
+          const json: AnalyticsResponse = await res.json();
+          setData(json);
+        }
+      } catch {
+        // silently fail (includes AbortError)
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    }
+    fetchAnalytics();
+    return () => { ignore = true; controller.abort(); };
+  }, [horizon, router]);
 
   async function handleLogout() {
     await fetch("/api/admin/logout", { method: "POST" });

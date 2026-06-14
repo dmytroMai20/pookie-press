@@ -3,24 +3,25 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { usePusher, type TapEventData } from "@/adapters/pusher/usePusher";
 import { HeartButton } from "./components/HeartButton";
-import { FloatingHearts } from "./components/FloatingHearts";
+import { FloatingHearts, randomHeartProps, type HeartProps } from "./components/FloatingHearts";
 import { LoveMeter } from "./components/LoveMeter";
 
 export default function HomePage() {
   const [weeklyCount, setWeeklyCount] = useState(0);
   const [goal, setGoal] = useState(50);
-  const [hearts, setHearts] = useState<string[]>([]);
+  const [hearts, setHearts] = useState<{ id: string; props: HeartProps }[]>([]);
   const [isSending, setIsSending] = useState(false);
   const isSendingRef = useRef(false);
 
   const spawnHearts = useCallback((count: number = 1) => {
-    const newHearts: string[] = [];
-    for (let i = 0; i < count; i++) {
-      newHearts.push(crypto.randomUUID());
-    }
+    const newHearts = Array.from({ length: count }, () => ({
+      id: crypto.randomUUID(),
+      props: randomHeartProps(),
+    }));
+    const ids = newHearts.map((h) => h.id);
     setHearts((prev) => [...prev, ...newHearts]);
     setTimeout(() => {
-      setHearts((prev) => prev.filter((h) => !newHearts.includes(h)));
+      setHearts((prev) => prev.filter((h) => !ids.includes(h.id)));
     }, 2000);
   }, []);
 
@@ -33,22 +34,23 @@ export default function HomePage() {
     }, [spawnHearts])
   );
 
-  const fetchStats = useCallback(async () => {
-    try {
-      const res = await fetch("/api/stats");
-      if (res.ok) {
-        const data = await res.json();
-        setWeeklyCount(data.weeklyCount);
-        setGoal(data.goal);
-      }
-    } catch {
-      // silently fail — stats will update on next tap
-    }
-  }, []);
-
   useEffect(() => {
+    let ignore = false;
+    async function fetchStats() {
+      try {
+        const res = await fetch("/api/stats");
+        if (res.ok && !ignore) {
+          const data = await res.json();
+          setWeeklyCount(data.weeklyCount);
+          setGoal(data.goal);
+        }
+      } catch {
+        // silently fail — stats will update on next tap
+      }
+    }
     fetchStats();
-  }, [fetchStats]);
+    return () => { ignore = true; };
+  }, []);
 
   const tapQueue = useRef(0);
   const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
