@@ -94,7 +94,7 @@ export default function HomePage() {
 
   const handleTap = () => {
     spawnHearts(1);
-    setWeeklyCount((c) => c + 1); // optimistic
+    setWeeklyCount((c) => c + 1); 
     tapQueue.current += 1;
 
     // Debounce: flush after 300ms of inactivity
@@ -103,7 +103,7 @@ export default function HomePage() {
 
     // Interval cap: flush every 1s during sustained tapping
     if (!intervalTimer.current) {
-      intervalTimer.current = setInterval(flushTaps, 1000);
+      intervalTimer.current = setInterval(flushTaps, 500);
     }
   };
 
