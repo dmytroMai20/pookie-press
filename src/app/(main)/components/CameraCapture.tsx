@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const MAX_DIMENSION = 1080;
 const JPEG_QUALITY = 0.8;
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_FILE_SIZE = 4.5 * 1024 * 1024;
 
 interface CameraCaptureProps {
   onUploading?: (uploading: boolean) => void;

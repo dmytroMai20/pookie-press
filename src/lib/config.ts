@@ -16,7 +16,7 @@ const envSchema = z.object({
   AWS_REGION: z.string().min(1),
   AWS_S3_BUCKET: z.string().min(1),
   IMAGE_DISPLAY_SECONDS: z.coerce.number().int().positive().default(5),
-  IMAGE_MAX_SIZE_MB: z.coerce.number().positive().default(5),
+  IMAGE_MAX_SIZE_MB: z.coerce.number().positive().default(4.5),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
