@@ -11,6 +11,12 @@ const envSchema = z.object({
   WEEKLY_TAP_GOAL: z.coerce.number().int().positive().default(50),
   ADMIN_PASSWORD: z.string().min(16),
   JWT_SECRET: z.string().min(32),
+  AWS_ACCESS_KEY_ID: z.string().min(1),
+  AWS_SECRET_ACCESS_KEY: z.string().min(1),
+  AWS_REGION: z.string().min(1),
+  AWS_S3_BUCKET: z.string().min(1),
+  IMAGE_DISPLAY_SECONDS: z.coerce.number().int().positive().default(5),
+  IMAGE_MAX_SIZE_MB: z.coerce.number().positive().default(4.5),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

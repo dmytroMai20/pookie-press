@@ -5,6 +5,7 @@ import PusherClient from "pusher-js";
 
 const CHANNEL_NAME = "pookie-press";
 const EVENT_NAME = "love-tap";
+const IMAGE_EVENT_NAME = "image-snap";
 
 export interface TapEventData {
   id: string;
@@ -12,10 +13,22 @@ export interface TapEventData {
   count: number;
 }
 
-export function usePusher(onTap: (event: TapEventData) => void) {
+export interface ImageEventData {
+  imageId: string;
+  url: string;
+  displaySeconds: number;
+  timestamp: string;
+}
+
+export function usePusher(
+  onTap: (event: TapEventData) => void,
+  onImageSnap?: (event: ImageEventData) => void
+) {
   const onTapRef = useRef(onTap);
+  const onImageSnapRef = useRef(onImageSnap);
   useEffect(() => {
     onTapRef.current = onTap;
+    onImageSnapRef.current = onImageSnap;
   });
 
   useEffect(() => {
@@ -32,6 +45,10 @@ export function usePusher(onTap: (event: TapEventData) => void) {
 
     channel.bind(EVENT_NAME, (data: TapEventData) => {
       onTapRef.current(data);
+    });
+
+    channel.bind(IMAGE_EVENT_NAME, (data: ImageEventData) => {
+      onImageSnapRef.current?.(data);
     });
 
     return () => {

@@ -5,6 +5,8 @@ import { usePusher, type TapEventData } from "@/adapters/pusher/usePusher";
 import { HeartButton } from "./components/HeartButton";
 import { FloatingHearts, randomHeartProps, type HeartProps } from "./components/FloatingHearts";
 import { LoveMeter } from "./components/LoveMeter";
+import { CameraCapture } from "./components/CameraCapture";
+import { useImageOverlay, ImageOverlay } from "./components/ImageOverlay";
 
 export default function HomePage() {
   const [weeklyCount, setWeeklyCount] = useState(0);
@@ -12,6 +14,7 @@ export default function HomePage() {
   const [hearts, setHearts] = useState<{ id: string; props: HeartProps }[]>([]);
   const [isSending, setIsSending] = useState(false);
   const isSendingRef = useRef(false);
+  const { image, showImage } = useImageOverlay();
 
   const spawnHearts = useCallback((count: number = 1) => {
     const newHearts = Array.from({ length: count }, () => ({
@@ -31,7 +34,8 @@ export default function HomePage() {
       const count = event.count || 1;
       spawnHearts(count);
       setWeeklyCount((c) => c + count);
-    }, [spawnHearts])
+    }, [spawnHearts]),
+    showImage
   );
 
   useEffect(() => {
@@ -110,6 +114,7 @@ export default function HomePage() {
   return (
     <main className="relative flex flex-1 flex-col items-center justify-center overflow-hidden">
       <FloatingHearts hearts={hearts} />
+      <ImageOverlay image={image} />
 
       <div className="flex flex-col items-center gap-8">
         <div className="text-center">
@@ -122,6 +127,8 @@ export default function HomePage() {
         <HeartButton onTap={handleTap} disabled={isSending} />
 
         <LoveMeter count={weeklyCount} goal={goal} />
+
+        <CameraCapture />
       </div>
     </main>
   );

@@ -26,6 +26,14 @@ Set these in your Vercel project settings:
 | `NEXT_PUBLIC_PUSHER_KEY` | Pusher key (client, public) |
 | `NEXT_PUBLIC_PUSHER_CLUSTER` | Pusher cluster (client, public) |
 | `WEEKLY_TAP_GOAL` | Weekly goal target (default: 50) |
+| `ADMIN_PASSWORD` | Admin panel password (min 16 chars) |
+| `JWT_SECRET` | JWT signing secret (min 32 chars) |
+| `AWS_ACCESS_KEY_ID` | AWS IAM access key |
+| `AWS_SECRET_ACCESS_KEY` | AWS IAM secret key |
+| `AWS_REGION` | S3 bucket region (e.g. `eu-west-1`) |
+| `AWS_S3_BUCKET` | S3 bucket name |
+| `IMAGE_DISPLAY_SECONDS` | Image overlay duration (default: 5) |
+| `IMAGE_MAX_SIZE_MB` | Max upload size in MB (default: 5) |
 
 ## Deploy Steps
 
