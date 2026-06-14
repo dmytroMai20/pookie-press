@@ -5,9 +5,15 @@ import type { ImageSnap } from "@/domain/models/ImageSnap";
 
 const IMAGE_RETENTION_DAYS = 7;
 const PRESIGNED_URL_EXPIRY_SECONDS = 60 * 60;
+const UPLOAD_URL_EXPIRY_SECONDS = 5 * 60;
 
-export interface ProcessImageInput {
-  buffer: Buffer;
+export interface PresignResult {
+  uploadUrl: string;
+  s3Key: string;
+}
+
+export interface ConfirmInput {
+  s3Key: string;
   contentType: string;
   sizeBytes: number;
   displaySeconds: number;
@@ -21,17 +27,30 @@ export class ImageService {
     private readonly realtimeGateway: RealtimeGateway
   ) {}
 
-  async processAndBroadcast(input: ProcessImageInput): Promise<ImageSnap> {
+  async createUploadUrl(
+    contentType: string,
+    maxSizeBytes: number
+  ): Promise<PresignResult> {
+    const now = new Date();
+    const s3Key = `images/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getTime()}-${randomSuffix()}.jpg`;
+
+    const uploadUrl = await this.storage.getUploadUrl(
+      s3Key,
+      contentType,
+      maxSizeBytes,
+      UPLOAD_URL_EXPIRY_SECONDS
+    );
+
+    return { uploadUrl, s3Key };
+  }
+
+  async confirmAndBroadcast(input: ConfirmInput): Promise<ImageSnap> {
     const now = new Date();
     const expiresAt = new Date(now);
     expiresAt.setDate(expiresAt.getDate() + IMAGE_RETENTION_DAYS);
 
-    const s3Key = `images/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getTime()}-${randomSuffix()}.jpg`;
-
-    await this.storage.upload(s3Key, input.buffer, input.contentType);
-
     const snap = await this.imageRepository.save({
-      s3Key,
+      s3Key: input.s3Key,
       contentType: input.contentType,
       sizeBytes: input.sizeBytes,
       uploadedAt: now,
@@ -39,7 +58,7 @@ export class ImageService {
       userId: input.userId,
     });
 
-    const url = await this.storage.getSignedUrl(s3Key, PRESIGNED_URL_EXPIRY_SECONDS);
+    const url = await this.storage.getSignedUrl(input.s3Key, PRESIGNED_URL_EXPIRY_SECONDS);
 
     await this.realtimeGateway.broadcastImage({
       imageId: snap.id,

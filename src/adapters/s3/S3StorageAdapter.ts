@@ -51,6 +51,24 @@ export class S3StorageAdapter implements StorageGateway {
     return getSignedUrl(client, command, { expiresIn: expiresInSeconds });
   }
 
+  async getUploadUrl(
+    key: string,
+    contentType: string,
+    _maxSizeBytes: number,
+    expiresInSeconds: number
+  ): Promise<string> {
+    const client = getS3Client();
+    const command = new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+      ContentType: contentType,
+    });
+    return getSignedUrl(client, command, {
+      expiresIn: expiresInSeconds,
+      unhoistableHeaders: new Set(["content-type"]),
+    });
+  }
+
   async delete(key: string): Promise<void> {
     const client = getS3Client();
     await client.send(
