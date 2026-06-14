@@ -10,6 +10,7 @@ function createMockRepository(): TapRepository {
       id: "tap-1",
       timestamp: new Date("2024-01-15T12:00:00Z"),
       userId: undefined,
+      count: 1,
     }),
     getWeeklyCount: vi.fn().mockResolvedValue(10),
     getTapsInRange: vi.fn().mockResolvedValue([]),

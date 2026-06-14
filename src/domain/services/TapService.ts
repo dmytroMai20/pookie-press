@@ -32,6 +32,7 @@ export class TapService {
     const tap = await this.tapRepository.recordTap({
       timestamp: new Date(),
       userId,
+      count,
     });
 
     const weekKey = getWeekKey();

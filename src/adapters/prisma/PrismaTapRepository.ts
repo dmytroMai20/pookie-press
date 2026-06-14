@@ -20,21 +20,25 @@ export class PrismaTapRepository implements TapRepository {
       data: {
         timestamp: tap.timestamp,
         userId: tap.userId,
+        count: tap.count,
       },
     });
     return {
       id: result.id,
       timestamp: result.timestamp,
       userId: result.userId ?? undefined,
+      count: result.count,
     };
   }
 
   async getWeeklyCount(since: Date): Promise<number> {
-    return prisma.loveTap.count({
+    const result = await prisma.loveTap.aggregate({
+      _sum: { count: true },
       where: {
         timestamp: { gte: since },
       },
     });
+    return result._sum.count ?? 0;
   }
 
   async getTapsInRange(start: Date, end: Date): Promise<LoveTap[]> {
@@ -48,6 +52,7 @@ export class PrismaTapRepository implements TapRepository {
       id: r.id,
       timestamp: r.timestamp,
       userId: r.userId ?? undefined,
+      count: r.count,
     }));
   }
 }

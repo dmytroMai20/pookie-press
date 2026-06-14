@@ -11,6 +11,7 @@ model LoveTap {
   id        String   @id @default(cuid())
   timestamp DateTime @default(now())
   userId    String?
+  count     Int      @default(1)
 
   @@index([timestamp])
   @@map("love_taps")

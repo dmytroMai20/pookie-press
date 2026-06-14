@@ -9,6 +9,8 @@ const envSchema = z.object({
   PUSHER_SECRET: z.string().min(1),
   PUSHER_CLUSTER: z.string().min(1),
   WEEKLY_TAP_GOAL: z.coerce.number().int().positive().default(50),
+  ADMIN_PASSWORD: z.string().min(16),
+  JWT_SECRET: z.string().min(32),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
