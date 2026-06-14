@@ -39,6 +39,16 @@ src/
 
 See `docs/architecture.md` for the full architecture overview.
 
+## Cloud Architecture diagrams
+
+### MVP
+
+<img width="1090" height="632" alt="diagram-export-14-06-2026-13_59_16" src="https://github.com/user-attachments/assets/30655c30-0eed-41c0-a4fb-4fb0a919ec79" />
+
+### POST-MVP
+
+<img width="1215" height="957" alt="diagram-export-14-06-2026-14_05_15" src="https://github.com/user-attachments/assets/c962e03e-8a9b-4cbe-b47d-5627a4d90120" />
+
 ## Design Decisions
 
 ### Why Pusher over SSE?
