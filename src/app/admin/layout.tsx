@@ -15,14 +15,13 @@ export default function AdminLayout({
   const isLoginPage = pathname === "/admin/login";
 
   useEffect(() => {
-    if (isLoginPage) {
-      setAuthState("unauthenticated");
-      return;
-    }
+    if (isLoginPage) return;
 
+    let ignore = false;
     async function checkAuth() {
       try {
         const res = await fetch("/api/admin/verify");
+        if (ignore) return;
         if (res.ok) {
           setAuthState("authenticated");
         } else {
@@ -30,12 +29,14 @@ export default function AdminLayout({
           router.replace("/admin/login");
         }
       } catch {
+        if (ignore) return;
         setAuthState("unauthenticated");
         router.replace("/admin/login");
       }
     }
 
     checkAuth();
+    return () => { ignore = true; };
   }, [isLoginPage, router]);
 
   if (isLoginPage) {

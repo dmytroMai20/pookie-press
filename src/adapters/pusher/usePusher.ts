@@ -14,7 +14,9 @@ export interface TapEventData {
 
 export function usePusher(onTap: (event: TapEventData) => void) {
   const onTapRef = useRef(onTap);
-  onTapRef.current = onTap;
+  useEffect(() => {
+    onTapRef.current = onTap;
+  });
 
   useEffect(() => {
     const key = process.env.NEXT_PUBLIC_PUSHER_KEY;
