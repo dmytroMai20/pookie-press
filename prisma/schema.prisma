@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model LoveTap {
+  id        String   @id @default(cuid())
+  timestamp DateTime @default(now())
+  userId    String?
+
+  @@index([timestamp])
+  @@map("love_taps")
+}

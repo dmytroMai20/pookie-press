@@ -1,0 +1,77 @@
+import type { LoveTap } from "@/domain/models/LoveTap";
+import type { TapRepository } from "@/ports/TapRepository";
+import type { RealtimeGateway } from "@/ports/RealtimeGateway";
+import type { CachePort } from "@/ports/CachePort";
+
+function getWeekKey(): string {
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const weekNumber = Math.ceil(
+    ((now.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7
+  );
+  return `weekly_taps:${now.getFullYear()}:w${weekNumber}`;
+}
+
+function getStartOfWeek(): Date {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(now.setDate(diff));
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
+export class TapService {
+  constructor(
+    private readonly tapRepository: TapRepository,
+    private readonly realtimeGateway: RealtimeGateway,
+    private readonly cache: CachePort
+  ) {}
+
+  async recordTap(count: number = 1, userId?: string): Promise<{ tap: LoveTap; weeklyCount: number }> {
+    const tap = await this.tapRepository.recordTap({
+      timestamp: new Date(),
+      userId,
+    });
+
+    const weekKey = getWeekKey();
+    const weeklyCount = count === 1
+      ? await this.cache.incrementWeeklyCounter(weekKey)
+      : await this.cache.incrementWeeklyCounterBy(weekKey, count);
+
+    await this.realtimeGateway.broadcastTap({
+      id: tap.id,
+      timestamp: tap.timestamp.toISOString(),
+      count,
+    });
+
+    return { tap, weeklyCount };
+  }
+
+  async getWeeklyCount(): Promise<number> {
+    const weekKey = getWeekKey();
+    const cached = await this.cache.getWeeklyCounter(weekKey);
+
+    if (cached > 0) return cached;
+
+    const startOfWeek = getStartOfWeek();
+    const count = await this.tapRepository.getWeeklyCount(startOfWeek);
+
+    if (count > 0) {
+      const secondsUntilEndOfWeek = this.getSecondsUntilEndOfWeek();
+      await this.cache.setWeeklyCounter(weekKey, count, secondsUntilEndOfWeek);
+    }
+
+    return count;
+  }
+
+  private getSecondsUntilEndOfWeek(): number {
+    const now = new Date();
+    const endOfWeek = new Date(now);
+    const day = endOfWeek.getDay();
+    const daysUntilSunday = day === 0 ? 0 : 7 - day;
+    endOfWeek.setDate(endOfWeek.getDate() + daysUntilSunday);
+    endOfWeek.setHours(23, 59, 59, 999);
+    return Math.ceil((endOfWeek.getTime() - now.getTime()) / 1000);
+  }
+}
