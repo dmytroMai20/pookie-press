@@ -80,11 +80,31 @@ export function CameraCapture({ onUploading }: CameraCaptureProps) {
     setUploading(true);
     onUploading?.(true);
     try {
-      const formData = new FormData();
-      formData.append("image", blob, "snap.jpg");
-      const res = await fetch("/api/image", { method: "POST", body: formData });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
+      const presignRes = await fetch("/api/image/presign", { method: "POST" });
+      if (!presignRes.ok) {
+        const data = await presignRes.json().catch(() => ({}));
+        setError(data.error ?? "Upload failed");
+        return;
+      }
+      const { uploadUrl, s3Key } = await presignRes.json();
+
+      const s3Res = await fetch(uploadUrl, {
+        method: "PUT",
+        body: blob,
+        headers: { "Content-Type": "image/jpeg" },
+      });
+      if (!s3Res.ok) {
+        setError("Failed to upload to storage");
+        return;
+      }
+
+      const confirmRes = await fetch("/api/image/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ s3Key, sizeBytes: blob.size }),
+      });
+      if (!confirmRes.ok) {
+        const data = await confirmRes.json().catch(() => ({}));
         setError(data.error ?? "Upload failed");
       }
     } catch {

@@ -62,6 +62,12 @@ describe("S3StorageAdapter", () => {
     expect(mockGetSignedUrl).toHaveBeenCalledOnce();
   });
 
+  it("generates presigned upload URL", async () => {
+    const url = await adapter.getUploadUrl("images/test.jpg", "image/jpeg", 5242880, 300);
+    expect(url).toBe("https://s3.example.com/signed");
+    expect(mockGetSignedUrl).toHaveBeenCalledOnce();
+  });
+
   it("deletes object", async () => {
     await adapter.delete("images/test.jpg");
     expect(mockSend).toHaveBeenCalledOnce();
