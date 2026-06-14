@@ -14,7 +14,7 @@ export function HeartButton({ onTap, disabled }: HeartButtonProps) {
       disabled={disabled}
       whileTap={{ scale: 0.9 }}
       whileHover={{ scale: 1.05 }}
-      className="relative flex h-44 w-44 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-purple-600 shadow-[0_0_50px_rgba(236,72,153,0.4)] transition-shadow hover:shadow-[0_0_80px_rgba(236,72,153,0.6)] disabled:opacity-70"
+      className="relative flex h-44 w-44 items-center justify-center overflow-visible rounded-full bg-gradient-to-br from-pink-500 to-purple-600 shadow-[0_0_50px_rgba(236,72,153,0.4)] transition-shadow hover:shadow-[0_0_80px_rgba(236,72,153,0.6)] disabled:opacity-70"
       aria-label="Send love tap"
     >
       <motion.div
@@ -39,15 +39,16 @@ export function HeartButton({ onTap, disabled }: HeartButtonProps) {
 
       {/* Pulse ring */}
       <motion.div
-        className="absolute inset-0 rounded-full border-2 border-pink-400/50"
+        className="absolute inset-0 rounded-full border-4 border-pink-400/60"
         animate={{
-          scale: [1, 1.3],
-          opacity: [0.5, 0],
+          scale: [1, 1.4, 1.6],
+          opacity: [0, 0.8, 0],
         }}
         transition={{
           duration: 2,
           repeat: Infinity,
           ease: "easeOut",
+          times: [0, 0.15, 1],
         }}
       />
     </motion.button>

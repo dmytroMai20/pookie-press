@@ -22,7 +22,7 @@ export function getConfig(): EnvConfig {
     const parsed = envSchema.safeParse(process.env);
     if (!parsed.success) {
       throw new Error(
-        `❌ Invalid environment variables:\n${JSON.stringify(parsed.error.format(), null, 2)}`
+        `Invalid environment variables:\n${JSON.stringify(parsed.error.format(), null, 2)}`
       );
     }
     _config = parsed.data;
