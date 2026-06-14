@@ -1,5 +1,5 @@
 import Pusher from "pusher";
-import type { RealtimeGateway, TapEvent } from "@/ports/RealtimeGateway";
+import type { RealtimeGateway, TapEvent, ImageEvent } from "@/ports/RealtimeGateway";
 
 let _pusher: Pusher | null = null;
 
@@ -18,9 +18,14 @@ function getPusherServer(): Pusher {
 
 export const CHANNEL_NAME = "pookie-press";
 export const EVENT_NAME = "love-tap";
+export const IMAGE_EVENT_NAME = "image-snap";
 
 export class PusherServerAdapter implements RealtimeGateway {
   async broadcastTap(event: TapEvent): Promise<void> {
     await getPusherServer().trigger(CHANNEL_NAME, EVENT_NAME, event);
+  }
+
+  async broadcastImage(event: ImageEvent): Promise<void> {
+    await getPusherServer().trigger(CHANNEL_NAME, IMAGE_EVENT_NAME, event);
   }
 }

@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
     "@prisma/client",
     "@prisma/adapter-pg",
     "@prisma/client-runtime-utils",
+    "sharp",
   ],
 };
 

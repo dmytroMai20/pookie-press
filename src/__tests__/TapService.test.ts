@@ -20,6 +20,7 @@ function createMockRepository(): TapRepository {
 function createMockGateway(): RealtimeGateway {
   return {
     broadcastTap: vi.fn().mockResolvedValue(undefined),
+    broadcastImage: vi.fn().mockResolvedValue(undefined),
   };
 }
 

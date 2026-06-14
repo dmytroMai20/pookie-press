@@ -16,3 +16,16 @@ model LoveTap {
   @@index([timestamp])
   @@map("love_taps")
 }
+
+model ImageSnap {
+  id          String   @id @default(cuid())
+  s3Key       String
+  contentType String
+  sizeBytes   Int
+  uploadedAt  DateTime @default(now())
+  expiresAt   DateTime
+  userId      String?
+
+  @@index([uploadedAt])
+  @@map("image_snaps")
+}
