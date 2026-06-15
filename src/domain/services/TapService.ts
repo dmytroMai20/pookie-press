@@ -29,18 +29,20 @@ export class TapService {
   ) {}
 
   async recordTap(count: number = 1, userId?: string): Promise<{ tap: LoveTap; weeklyCount: number }> {
-    const tap = await this.tapRepository.recordTap({
-      timestamp: new Date(),
-      userId,
-      count,
-    });
-
     const weekKey = getWeekKey();
-    const weeklyCount = count === 1
-      ? await this.cache.incrementWeeklyCounter(weekKey)
-      : await this.cache.incrementWeeklyCounterBy(weekKey, count);
 
-    await this.realtimeGateway.broadcastTap({
+    const [tap, weeklyCount] = await Promise.all([
+      this.tapRepository.recordTap({
+        timestamp: new Date(),
+        userId,
+        count,
+      }),
+      count === 1
+        ? this.cache.incrementWeeklyCounter(weekKey)
+        : this.cache.incrementWeeklyCounterBy(weekKey, count),
+    ]);
+
+    this.realtimeGateway.broadcastTap({
       id: tap.id,
       timestamp: tap.timestamp.toISOString(),
       count,
