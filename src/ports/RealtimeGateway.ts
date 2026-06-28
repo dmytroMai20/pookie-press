@@ -2,6 +2,7 @@ export interface TapEvent {
   id: string;
   timestamp: string;
   count: number;
+  color?: string;
 }
 
 export interface ImageEvent {
