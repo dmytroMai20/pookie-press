@@ -63,6 +63,17 @@ describe("TapService", () => {
         id: "tap-1",
         timestamp: "2024-01-15T12:00:00.000Z",
         count: 1,
+        color: undefined,
+      });
+    });
+
+    it("broadcasts color when provided", async () => {
+      await service.recordTap(1, undefined, "#7EB8DA");
+      expect(mockGateway.broadcastTap).toHaveBeenCalledWith({
+        id: "tap-1",
+        timestamp: "2024-01-15T12:00:00.000Z",
+        count: 1,
+        color: "#7EB8DA",
       });
     });
 

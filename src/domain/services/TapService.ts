@@ -28,7 +28,7 @@ export class TapService {
     private readonly cache: CachePort
   ) {}
 
-  async recordTap(count: number = 1, userId?: string): Promise<{ tap: LoveTap; weeklyCount: number }> {
+  async recordTap(count: number = 1, userId?: string, color?: string): Promise<{ tap: LoveTap; weeklyCount: number }> {
     const weekKey = getWeekKey();
 
     const [tap, weeklyCount] = await Promise.all([
@@ -46,6 +46,7 @@ export class TapService {
       id: tap.id,
       timestamp: tap.timestamp.toISOString(),
       count,
+      color,
     });
 
     return { tap, weeklyCount };

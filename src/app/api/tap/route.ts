@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json().catch(() => ({}));
     const count = Math.min(Math.max(Math.floor(Number(body.count) || 1), 1), 50);
+    const color = typeof body.color === "string" ? body.color.slice(0, 9) : undefined;
 
     const { allowed, remaining } = await rateLimit(ip, 120, 60);
 
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     const tapService = getTapService();
-    const { tap, weeklyCount } = await tapService.recordTap(count);
+    const { tap, weeklyCount } = await tapService.recordTap(count, undefined, color);
 
     return NextResponse.json(
       { success: true, tap: { id: tap.id, timestamp: tap.timestamp.toISOString() }, count, weeklyCount },

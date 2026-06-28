@@ -11,6 +11,7 @@ export interface TapEventData {
   id: string;
   timestamp: string;
   count: number;
+  color?: string;
 }
 
 export interface ImageEventData {

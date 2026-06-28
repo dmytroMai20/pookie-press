@@ -7,6 +7,7 @@ import { FloatingHearts, randomHeartProps, type HeartProps } from "./components/
 import { LoveMeter } from "./components/LoveMeter";
 import { CameraCapture } from "./components/CameraCapture";
 import { useImageOverlay, ImageOverlay } from "./components/ImageOverlay";
+import { useUserColor } from "@/hooks/useUserColor";
 
 export default function HomePage() {
   const [weeklyCount, setWeeklyCount] = useState(0);
@@ -15,11 +16,12 @@ export default function HomePage() {
   const [isSending, setIsSending] = useState(false);
   const isSendingRef = useRef(false);
   const { image, showImage } = useImageOverlay();
+  const userColor = useUserColor();
 
-  const spawnHearts = useCallback((count: number = 1) => {
+  const spawnHearts = useCallback((count: number = 1, color?: string) => {
     const newHearts = Array.from({ length: count }, () => ({
       id: crypto.randomUUID(),
-      props: randomHeartProps(),
+      props: randomHeartProps(color),
     }));
     const ids = newHearts.map((h) => h.id);
     setHearts((prev) => [...prev, ...newHearts]);
@@ -32,7 +34,7 @@ export default function HomePage() {
     useCallback((event: TapEventData) => {
       if (isSendingRef.current) return;
       const count = event.count || 1;
-      spawnHearts(count);
+      spawnHearts(count, event.color);
       setWeeklyCount((c) => c + count);
     }, [spawnHearts]),
     showImage
@@ -77,7 +79,7 @@ export default function HomePage() {
       const res = await fetch("/api/tap", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ count }),
+        body: JSON.stringify({ count, color: userColor }),
       });
 
       if (res.ok) {
@@ -94,10 +96,10 @@ export default function HomePage() {
         isSendingRef.current = false;
       }, 500);
     }
-  }, []);
+  }, [userColor]);
 
   const handleTap = () => {
-    spawnHearts(1);
+    spawnHearts(1, userColor);
     setWeeklyCount((c) => c + 1); 
     tapQueue.current += 1;
 
