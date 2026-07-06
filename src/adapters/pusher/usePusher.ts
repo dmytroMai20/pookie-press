@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import PusherClient from "pusher-js";
 
 const CHANNEL_NAME = "pookie-press";
@@ -25,6 +25,7 @@ export function usePusher(
   onTap: (event: TapEventData) => void,
   onImageSnap?: (event: ImageEventData) => void
 ) {
+  const [connected, setConnected] = useState(false);
   const onTapRef = useRef(onTap);
   const onImageSnapRef = useRef(onImageSnap);
   useEffect(() => {
@@ -42,6 +43,11 @@ export function usePusher(
     }
 
     const pusher = new PusherClient(key, { cluster });
+
+    pusher.connection.bind("connected", () => setConnected(true));
+    pusher.connection.bind("disconnected", () => setConnected(false));
+    pusher.connection.bind("failed", () => setConnected(false));
+
     const channel = pusher.subscribe(CHANNEL_NAME);
 
     channel.bind(EVENT_NAME, (data: TapEventData) => {
@@ -58,4 +64,6 @@ export function usePusher(
       pusher.disconnect();
     };
   }, []);
+
+  return { connected };
 }
