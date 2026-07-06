@@ -12,7 +12,17 @@ const COLOR_PALETTE = [
   "#E8879B",
   "#A3C4F3",
   "#D4A5E5",
-  "#9ED8B5"
+  "#9ED8B5",
+  "#F4845F",
+  "#E0BBE4",
+  "#72C1E8",
+  "#C9E4A4",
+  "#FFB7CE",
+  "#85D2D0",
+  "#D4A0D9",
+  "#F7D794",
+  "#82CCDD",
+  "#F8B4B4",
 ] as const;
 
 const STORAGE_KEY = "pookie-press-user-id";

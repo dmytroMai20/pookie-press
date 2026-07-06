@@ -30,7 +30,7 @@ export default function HomePage() {
     }, 2000);
   }, []);
 
-  usePusher(
+  const { connected } = usePusher(
     useCallback((event: TapEventData) => {
       if (isSendingRef.current) return;
       const count = event.count || 1;
@@ -124,13 +124,14 @@ export default function HomePage() {
             Pookie-Press
           </h1>
           <p className="mt-0.5 text-xs text-white/40">tap to send love to pooks!</p>
+          <p className="mt-1 text-[10px] text-white/25">your taps & photos appear on their screen in real time ✨</p>
         </div>
 
-        <HeartButton onTap={handleTap} disabled={isSending} />
+        <HeartButton onTap={handleTap} disabled={!connected || isSending} />
 
         <LoveMeter count={weeklyCount} goal={goal} />
 
-        <CameraCapture />
+        <CameraCapture disabled={!connected} />
       </div>
     </main>
   );

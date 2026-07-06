@@ -8,10 +8,11 @@ const JPEG_QUALITY = 0.8;
 const MAX_FILE_SIZE = 4.5 * 1024 * 1024;
 
 interface CameraCaptureProps {
+  disabled?: boolean;
   onUploading?: (uploading: boolean) => void;
 }
 
-export function CameraCapture({ onUploading }: CameraCaptureProps) {
+export function CameraCapture({ disabled, onUploading }: CameraCaptureProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -119,7 +120,7 @@ export function CameraCapture({ onUploading }: CameraCaptureProps) {
     <>
       <motion.button
         onClick={startCamera}
-        disabled={uploading}
+        disabled={disabled || uploading}
         whileTap={{ scale: 0.9 }}
         whileHover={{ scale: 1.1 }}
         className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/60 backdrop-blur transition-colors hover:bg-white/20 hover:text-white disabled:opacity-40"
