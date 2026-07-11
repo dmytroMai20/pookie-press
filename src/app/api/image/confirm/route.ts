@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getImageService } from "@/lib/container";
+import { getConfig } from "@/lib/config";
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,6 +18,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: "Invalid s3Key" },
         { status: 400 }
+      );
+    }
+
+    const config = getConfig();
+    const maxBytes = config.IMAGE_MAX_SIZE_MB * 1024 * 1024;
+    if (typeof sizeBytes === "number" && sizeBytes > maxBytes) {
+      return NextResponse.json(
+        { success: false, error: "File exceeds maximum size" },
+        { status: 413 }
       );
     }
 

@@ -9,9 +9,7 @@ function getWeekKey(): string {
   const dayOfYear = Math.floor((now.getTime() - startOfYear) / 86400000);
   const startDay = new Date(startOfYear).getUTCDay();
   const weekNumber = Math.ceil((dayOfYear + startDay + 1) / 7);
-  const key = `weekly_taps:${now.getUTCFullYear()}:w${weekNumber}`;
-  console.log("[TapService] weekKey =", key);
-  return key;
+  return `weekly_taps:${now.getUTCFullYear()}:w${weekNumber}`;
 }
 
 function getStartOfWeek(): Date {
@@ -72,11 +70,14 @@ export class TapService {
 
   private getSecondsUntilEndOfWeek(): number {
     const now = new Date();
-    const endOfWeek = new Date(now);
-    const day = endOfWeek.getDay();
+    const day = now.getUTCDay();
     const daysUntilSunday = day === 0 ? 0 : 7 - day;
-    endOfWeek.setDate(endOfWeek.getDate() + daysUntilSunday);
-    endOfWeek.setHours(23, 59, 59, 999);
+    const endOfWeek = new Date(Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate() + daysUntilSunday,
+      23, 59, 59, 999
+    ));
     return Math.ceil((endOfWeek.getTime() - now.getTime()) / 1000);
   }
 }
