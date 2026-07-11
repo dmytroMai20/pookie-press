@@ -31,33 +31,27 @@ export function useWebSocket(
 
   useEffect(() => {
     const url = process.env.NEXT_PUBLIC_WS_URL;
-    console.log("[ws] NEXT_PUBLIC_WS_URL =", url);
 
     if (!url) {
-      console.warn("[ws] NEXT_PUBLIC_WS_URL not set, real-time disabled");
       return;
     }
 
     function connect() {
-      console.log("[ws] connecting to", url);
       const ws = new WebSocket(url!);
       ws.binaryType = "arraybuffer";
       wsRef.current = ws;
 
       ws.addEventListener("open", () => {
-        console.log("[ws] connected");
         setConnected(true);
         reconnectAttempt.current = 0;
       });
 
-      ws.addEventListener("close", (e) => {
-        console.log("[ws] closed — code:", e.code, "reason:", e.reason, "clean:", e.wasClean);
+      ws.addEventListener("close", () => {
         setConnected(false);
         scheduleReconnect();
       });
 
-      ws.addEventListener("error", (e) => {
-        console.error("[ws] error:", e);
+      ws.addEventListener("error", () => {
         ws.close();
       });
 
@@ -66,7 +60,6 @@ export function useWebSocket(
           const msg = decode(new Uint8Array(event.data)) as ServerMessage;
 
           if ("error" in msg) {
-            console.warn("[ws] server error:", msg.error);
             return;
           }
 
@@ -88,8 +81,8 @@ export function useWebSocket(
               }
               break;
           }
-        } catch (err) {
-          console.error("[ws] failed to decode message:", err);
+        } catch {
+          // malformed message — ignore
         }
       });
     }
@@ -99,7 +92,6 @@ export function useWebSocket(
         RECONNECT_DELAYS[
           Math.min(reconnectAttempt.current, RECONNECT_DELAYS.length - 1)
         ];
-      console.log(`[ws] reconnecting in ${delay}ms (attempt ${reconnectAttempt.current + 1})`);
       reconnectAttempt.current += 1;
       reconnectTimer.current = setTimeout(connect, delay);
     }

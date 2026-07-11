@@ -21,8 +21,8 @@ A real-time love-tap app for couples. Tap a heart button to send love to your pa
 | **Database** | PostgreSQL (Supabase or Neon) |
 | **ORM** | Prisma 7 (driver adapter pattern) |
 | **Cache** | Upstash Redis (HTTP-based) |
-| **Real-time** | Pusher Channels (WebSocket) |
-| **Deployment** | Vercel |
+| **Real-time** | Custom C++ WebSocket server ([repo + benchmarks](https://github.com/dmytroMai20/pookie-press-ws)) |
+| **Deployment** | Vercel (app) + AWS EC2 (WebSocket server) |
 
 ## Architecture
 
@@ -32,7 +32,7 @@ Hexagonal architecture (ports & adapters) — business logic is decoupled from i
 src/
 ├── domain/       Pure business logic (models, services)
 ├── ports/        TypeScript interfaces defining contracts
-├── adapters/     Concrete implementations (Prisma, Redis, Pusher)
+├── adapters/     Concrete implementations (Prisma, Redis, WebSocket)
 ├── app/          Next.js App Router (UI + API routes)
 └── lib/          DI container, config, utilities
 ```
@@ -51,9 +51,9 @@ See `docs/architecture.md` for the full architecture overview.
 
 ## Design Decisions
 
-### Why Pusher over SSE?
+### Why a custom C++ WebSocket server over Pusher?
 
-The client only **receives** real-time events (server → client), making Server-Sent Events (SSE) a natural fit. However, **Vercel serverless functions don't support long-lived HTTP connections** required by SSE (they timeout after 10-30s). Pusher works natively with serverless — the server fires a trigger and Pusher handles delivery over its own managed WebSocket infrastructure. This avoids needing a separate long-running server.
+The MVP used Pusher Channels for real-time delivery. While Pusher works well with serverless, it adds per-message costs and a third-party dependency. The custom C++ WebSocket server runs on a single EC2 instance with Caddy for TLS termination, uses MessagePack binary serialization, and handles all client-to-client fan-out directly — no round-trip through the Next.js server needed. This gives full control over the transport layer, lower latency, and zero per-message costs. See the [WebSocket server repo](https://github.com/dmytroMai20/pookie-press-ws) for implementation details and benchmarks.
 
 ### Why Prisma 7 driver adapters?
 
@@ -61,15 +61,15 @@ Prisma 7 removed `url` from the `datasource` block in `schema.prisma`. The conne
 
 ### Why Upstash Redis over direct PostgreSQL queries for counts?
 
-Redis `INCR` is atomic and returns the new value in a single operation — perfect for a fast tap counter. The weekly count is cached in Redis and used as the source of truth for display. PostgreSQL is the durable store; Redis is the fast path. This avoids a `COUNT(*)` query on every tap and every stats fetch.
+Redis `INCR` is atomic and returns the new value in a single operation — perfect for a fast tap counter. The weekly count is stored in Redis and used as the source of truth for display. Currently, tap events flow directly through the WebSocket server and only update Redis counters — individual tap records are not persisted to PostgreSQL. This keeps the hot path fast and avoids database write overhead on every tap.
 
 ### Why optimistic updates with debounced flush?
 
-Rapid tapping needs to feel instant. The UI increments the meter immediately on each tap, queues taps locally, and flushes them to the server in a batch after 300ms of inactivity. The server's response includes the true `weeklyCount` from Redis, which corrects any drift. This gives sub-millisecond UI response while keeping the server accurate.
+Rapid tapping needs to feel instant. The UI increments the meter immediately on each tap, queues taps locally, and flushes them to the WebSocket server in a batch. The C++ server broadcasts to all connected clients directly, so partners see hearts in real time with minimal latency.
 
 ### Why hexagonal architecture for an MVP?
 
-The ports & adapters pattern makes it trivial to swap infrastructure. For example, replacing Pusher with another provider only requires a new adapter — no domain or API changes. This keeps the MVP lean while being extensible for post-MVP features (auth, multi-couple support, analytics).
+The ports & adapters pattern makes it trivial to swap infrastructure. For example, migrating from Pusher to the custom C++ WebSocket server only required a new adapter — no domain or API changes. This keeps the MVP lean while being extensible for post-MVP features (auth, multi-couple support, analytics).
 
 ## Getting Started
 
@@ -79,7 +79,7 @@ The ports & adapters pattern makes it trivial to swap infrastructure. For exampl
 - pnpm
 - A PostgreSQL database (Supabase or Neon)
 - An Upstash Redis database
-- A Pusher Channels app
+- A running instance of the [C++ WebSocket server](https://github.com/dmytroMai20/pookie-press-ws)
 
 ### Setup
 
@@ -110,13 +110,16 @@ Open [http://localhost:3000](http://localhost:3000) — open in two tabs to test
 | `DATABASE_URL` | PostgreSQL connection string |
 | `UPSTASH_REDIS_REST_URL` | Upstash Redis REST endpoint |
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis auth token |
-| `PUSHER_APP_ID` | Pusher app ID |
-| `PUSHER_KEY` | Pusher key (server) |
-| `PUSHER_SECRET` | Pusher secret |
-| `PUSHER_CLUSTER` | Pusher cluster region |
-| `NEXT_PUBLIC_PUSHER_KEY` | Pusher key (client, public) |
-| `NEXT_PUBLIC_PUSHER_CLUSTER` | Pusher cluster (client, public) |
+| `NEXT_PUBLIC_WS_URL` | WebSocket server URL (e.g. `wss://ws.yourdomain.com`) |
 | `WEEKLY_TAP_GOAL` | Weekly goal target (default: 50) |
+| `ADMIN_PASSWORD` | Admin panel password (min 16 chars) |
+| `JWT_SECRET` | JWT signing secret (min 32 chars) |
+| `AWS_ACCESS_KEY_ID` | AWS IAM access key (for S3 image uploads) |
+| `AWS_SECRET_ACCESS_KEY` | AWS IAM secret key |
+| `AWS_REGION` | S3 bucket region |
+| `AWS_S3_BUCKET` | S3 bucket name |
+| `IMAGE_DISPLAY_SECONDS` | Image overlay duration (default: 5) |
+| `IMAGE_MAX_SIZE_MB` | Max upload size in MB (default: 4.5) |
 
 ## Scripts
 
