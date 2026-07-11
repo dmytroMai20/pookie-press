@@ -39,15 +39,49 @@ src/
 
 See `docs/architecture.md` for the full architecture overview.
 
-## Cloud Architecture diagrams
+## Cloud Architecture
 
-### MVP
+```mermaid
+graph LR
+    Client["Client (Browser)"]
 
-<img width="1090" height="632" alt="diagram-export-14-06-2026-13_59_16" src="https://github.com/user-attachments/assets/30655c30-0eed-41c0-a4fb-4fb0a919ec79" />
+    subgraph Vercel
+        App["Next.js App"]
+        API_Stats["/api/stats"]
+        API_Presign["/api/image/presign"]
+        API_Confirm["/api/image/confirm"]
+        Admin["/admin panel"]
+    end
 
-### POST-MVP
+    subgraph AWS
+        EC2["EC2 — C++ WebSocket Server\n(Caddy TLS)"]
+        S3["S3 Bucket"]
+    end
 
-<img width="1215" height="957" alt="diagram-export-14-06-2026-14_05_15" src="https://github.com/user-attachments/assets/c962e03e-8a9b-4cbe-b47d-5627a4d90120" />
+    Redis["Upstash Redis"]
+    DB["PostgreSQL (Supabase)"]
+
+    %% Real-time path
+    Client -- "WSS: tap/image events" --> EC2
+    EC2 -- "WSS: broadcast to all clients" --> Client
+    EC2 -- "HTTP: INCR weekly counter" --> Redis
+
+    %% Stats path
+    Client -- "HTTPS: GET /api/stats" --> API_Stats
+    API_Stats -- "read counter" --> Redis
+
+    %% Image upload path
+    Client -- "HTTPS: POST /api/image/presign" --> API_Presign
+    API_Presign -- "generate presigned URL" --> S3
+    Client -- "HTTPS PUT: upload image" --> S3
+    Client -- "HTTPS: POST /api/image/confirm" --> API_Confirm
+    API_Confirm -- "save metadata" --> DB
+    API_Confirm -- "generate signed read URL" --> S3
+
+    %% Admin path
+    Admin -- "read analytics" --> Redis
+    Admin -- "read image records" --> DB
+```
 
 ## Design Decisions
 
