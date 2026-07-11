@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { ImageEventData } from "@/adapters/pusher/usePusher";
+import type { ImageEvent as ImageEventData } from "@/adapters/websocket/types";
 
 interface PositionedImage {
   event: ImageEventData;
@@ -20,35 +20,26 @@ function randomPosition(): { x: number; y: number; rotation: number } {
 }
 
 export function useImageOverlay() {
-  const [image, setImage] = useState<PositionedImage | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [images, setImages] = useState<PositionedImage[]>([]);
 
   const showImage = useCallback((event: ImageEventData) => {
-    if (timerRef.current) clearTimeout(timerRef.current);
     const pos = randomPosition();
-    setImage({ event, ...pos });
+    const entry: PositionedImage = { event, ...pos };
+    setImages((prev) => [...prev, entry]);
+
+    setTimeout(() => {
+      setImages((prev) => prev.filter((img) => img.event.imageId !== event.imageId));
+    }, 5000);
   }, []);
 
-  useEffect(() => {
-    if (!image) return;
-
-    timerRef.current = setTimeout(() => {
-      setImage(null);
-    }, image.event.displaySeconds * 1000);
-
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [image]);
-
-  return { image, showImage };
+  return { images, showImage };
 }
 
-export function ImageOverlay({ image }: { image: PositionedImage | null }) {
+export function ImageOverlay({ images }: { images: PositionedImage[] }) {
   return (
     <div className="pointer-events-none fixed inset-0 z-30 overflow-hidden">
       <AnimatePresence>
-        {image && (
+        {images.map((image) => (
           <motion.div
             key={image.event.imageId}
             initial={{ opacity: 0, scale: 0.5, y: 30 }}
@@ -67,14 +58,14 @@ export function ImageOverlay({ image }: { image: PositionedImage | null }) {
               <img
                 src={image.event.url}
                 alt="Pookie snap"
-                className="w-full object-cover"
+                className="w-full object-cover -scale-x-100"
               />
             </div>
             <p className="mt-1 text-center text-[10px] text-white/50">
               from your pookie
             </p>
           </motion.div>
-        )}
+        ))}
       </AnimatePresence>
     </div>
   );

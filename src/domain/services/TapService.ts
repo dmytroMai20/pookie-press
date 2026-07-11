@@ -5,19 +5,20 @@ import type { CachePort } from "@/ports/CachePort";
 
 function getWeekKey(): string {
   const now = new Date();
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
-  const weekNumber = Math.ceil(
-    ((now.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7
-  );
-  return `weekly_taps:${now.getFullYear()}:w${weekNumber}`;
+  const startOfYear = Date.UTC(now.getUTCFullYear(), 0, 1);
+  const dayOfYear = Math.floor((now.getTime() - startOfYear) / 86400000);
+  const startDay = new Date(startOfYear).getUTCDay();
+  const weekNumber = Math.ceil((dayOfYear + startDay + 1) / 7);
+  const key = `weekly_taps:${now.getUTCFullYear()}:w${weekNumber}`;
+  console.log("[TapService] weekKey =", key);
+  return key;
 }
 
 function getStartOfWeek(): Date {
   const now = new Date();
-  const day = now.getDay();
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(now.setDate(diff));
-  monday.setHours(0, 0, 0, 0);
+  const day = now.getUTCDay();
+  const diff = now.getUTCDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), diff));
   return monday;
 }
 

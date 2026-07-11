@@ -8,7 +8,6 @@ export interface TapEvent {
 export interface ImageEvent {
   imageId: string;
   url: string;
-  displaySeconds: number;
   timestamp: string;
 }
 

@@ -31,3 +31,6 @@ Consider if I actually need redis?
 
 ### websocket server
 The server will be written in C++ for lower latency and better performance. Will implement rate limiting through leaky bucket algorithm.
+
+## Reverse proxy
+Rather than implementing TLS on the websocket server, we'll use a reverse proxy like Nginx or Caddy to handle TLS termination and forward requests to the websocket server.

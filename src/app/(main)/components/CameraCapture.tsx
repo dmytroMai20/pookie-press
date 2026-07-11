@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import type { ImageEvent } from "@/adapters/websocket/types";
 
 const MAX_DIMENSION = 1080;
 const JPEG_QUALITY = 0.8;
@@ -10,9 +11,10 @@ const MAX_FILE_SIZE = 4.5 * 1024 * 1024;
 interface CameraCaptureProps {
   disabled?: boolean;
   onUploading?: (uploading: boolean) => void;
+  sendImage: (event: ImageEvent) => void;
 }
 
-export function CameraCapture({ disabled, onUploading }: CameraCaptureProps) {
+export function CameraCapture({ disabled, onUploading, sendImage }: CameraCaptureProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -107,6 +109,9 @@ export function CameraCapture({ disabled, onUploading }: CameraCaptureProps) {
       if (!confirmRes.ok) {
         const data = await confirmRes.json().catch(() => ({}));
         setError(data.error ?? "Upload failed");
+      } else {
+        const { imageId, url, timestamp } = await confirmRes.json();
+        sendImage({ imageId, url, timestamp });
       }
     } catch {
       setError("Upload failed");
@@ -114,7 +119,7 @@ export function CameraCapture({ disabled, onUploading }: CameraCaptureProps) {
       setUploading(false);
       onUploading?.(false);
     }
-  }, [stopCamera, onUploading]);
+  }, [stopCamera, onUploading, sendImage]);
 
   return (
     <>
@@ -154,7 +159,7 @@ export function CameraCapture({ disabled, onUploading }: CameraCaptureProps) {
               autoPlay
               playsInline
               muted
-              className="max-h-[70vh] max-w-[90vw] rounded-2xl object-cover"
+              className="max-h-[70vh] max-w-[90vw] rounded-2xl object-cover -scale-x-100"
             />
 
             <div className="mt-6 flex items-center gap-6">

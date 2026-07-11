@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ImageService } from "@/domain/services/ImageService";
 import type { ImageRepository } from "@/ports/ImageRepository";
 import type { StorageGateway } from "@/ports/StorageGateway";
-import type { RealtimeGateway } from "@/ports/RealtimeGateway";
 
 function createMockImageRepository(): ImageRepository {
   return {
@@ -23,24 +22,15 @@ function createMockStorage(): StorageGateway {
   };
 }
 
-function createMockGateway(): RealtimeGateway {
-  return {
-    broadcastTap: vi.fn().mockResolvedValue(undefined),
-    broadcastImage: vi.fn().mockResolvedValue(undefined),
-  };
-}
-
 describe("ImageService", () => {
   let service: ImageService;
   let mockRepo: ImageRepository;
   let mockStorage: StorageGateway;
-  let mockGateway: RealtimeGateway;
 
   beforeEach(() => {
     mockRepo = createMockImageRepository();
     mockStorage = createMockStorage();
-    mockGateway = createMockGateway();
-    service = new ImageService(mockRepo, mockStorage, mockGateway);
+    service = new ImageService(mockRepo, mockStorage);
   });
 
   describe("createUploadUrl", () => {
@@ -59,16 +49,15 @@ describe("ImageService", () => {
     });
   });
 
-  describe("confirmAndBroadcast", () => {
+  describe("confirmUpload", () => {
     const input = {
       s3Key: "images/2024/01/test.jpg",
       contentType: "image/jpeg",
       sizeBytes: 1024,
-      displaySeconds: 5,
     };
 
     it("persists metadata to repository", async () => {
-      await service.confirmAndBroadcast(input);
+      await service.confirmUpload(input);
       expect(mockRepo.save).toHaveBeenCalledOnce();
       const saved = (mockRepo.save as ReturnType<typeof vi.fn>).mock.calls[0][0];
       expect(saved.contentType).toBe("image/jpeg");
@@ -77,39 +66,35 @@ describe("ImageService", () => {
     });
 
     it("sets expiration to 7 days from upload", async () => {
-      await service.confirmAndBroadcast(input);
+      await service.confirmUpload(input);
       const saved = (mockRepo.save as ReturnType<typeof vi.fn>).mock.calls[0][0];
       const diffDays = (saved.expiresAt.getTime() - saved.uploadedAt.getTime()) / (1000 * 60 * 60 * 24);
       expect(diffDays).toBeCloseTo(7, 0);
     });
 
-    it("generates presigned GET URL for broadcast", async () => {
-      await service.confirmAndBroadcast(input);
+    it("generates presigned GET URL", async () => {
+      await service.confirmUpload(input);
       expect(mockStorage.getSignedUrl).toHaveBeenCalledOnce();
       const [key, expiresIn] = (mockStorage.getSignedUrl as ReturnType<typeof vi.fn>).mock.calls[0];
       expect(key).toBe("images/2024/01/test.jpg");
       expect(expiresIn).toBe(3600);
     });
 
-    it("broadcasts image event via realtime gateway", async () => {
-      await service.confirmAndBroadcast(input);
-      expect(mockGateway.broadcastImage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          imageId: "img-1",
-          url: "https://s3.example.com/signed-url",
-          displaySeconds: 5,
-        })
-      );
+    it("returns image metadata for client broadcast", async () => {
+      const result = await service.confirmUpload(input);
+      expect(result.imageId).toBe("img-1");
+      expect(result.url).toBe("https://s3.example.com/signed-url");
+      expect(result.timestamp).toBeDefined();
     });
 
     it("returns the saved image snap", async () => {
-      const result = await service.confirmAndBroadcast(input);
-      expect(result.id).toBe("img-1");
-      expect(result.contentType).toBe("image/jpeg");
+      const result = await service.confirmUpload(input);
+      expect(result.snap.id).toBe("img-1");
+      expect(result.snap.contentType).toBe("image/jpeg");
     });
 
     it("includes userId when provided", async () => {
-      await service.confirmAndBroadcast({ ...input, userId: "user-1" });
+      await service.confirmUpload({ ...input, userId: "user-1" });
       const saved = (mockRepo.save as ReturnType<typeof vi.fn>).mock.calls[0][0];
       expect(saved.userId).toBe("user-1");
     });

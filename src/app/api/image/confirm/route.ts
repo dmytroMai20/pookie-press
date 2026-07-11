@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getImageService } from "@/lib/container";
-import { getConfig } from "@/lib/config";
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,18 +20,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const config = getConfig();
-
     const imageService = getImageService();
-    const snap = await imageService.confirmAndBroadcast({
+    const result = await imageService.confirmUpload({
       s3Key,
       contentType: "image/jpeg",
       sizeBytes: typeof sizeBytes === "number" ? sizeBytes : 0,
-      displaySeconds: config.IMAGE_DISPLAY_SECONDS,
     });
 
     return NextResponse.json(
-      { success: true, imageId: snap.id },
+      {
+        success: true,
+        imageId: result.imageId,
+        url: result.url,
+        timestamp: result.timestamp,
+      },
       { status: 201 }
     );
   } catch (error) {

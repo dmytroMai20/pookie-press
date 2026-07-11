@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { usePusher, type TapEventData } from "@/adapters/pusher/usePusher";
+import { useWebSocket, type TapEvent } from "@/adapters/websocket/useWebSocket";
 import { HeartButton } from "./components/HeartButton";
 import { FloatingHearts, randomHeartProps, type HeartProps } from "./components/FloatingHearts";
 import { LoveMeter } from "./components/LoveMeter";
@@ -14,8 +14,7 @@ export default function HomePage() {
   const [goal, setGoal] = useState(50);
   const [hearts, setHearts] = useState<{ id: string; props: HeartProps }[]>([]);
   const [isSending, setIsSending] = useState(false);
-  const isSendingRef = useRef(false);
-  const { image, showImage } = useImageOverlay();
+  const { images, showImage } = useImageOverlay();
   const userColor = useUserColor();
 
   const spawnHearts = useCallback((count: number = 1, color?: string) => {
@@ -30,9 +29,8 @@ export default function HomePage() {
     }, 2000);
   }, []);
 
-  const { connected } = usePusher(
-    useCallback((event: TapEventData) => {
-      if (isSendingRef.current) return;
+  const { connected, sendTap, sendImage } = useWebSocket(
+    useCallback((event: TapEvent) => {
       const count = event.count || 1;
       spawnHearts(count, event.color);
       setWeeklyCount((c) => c + count);
@@ -62,11 +60,10 @@ export default function HomePage() {
   const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intervalTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const flushTaps = useCallback(async () => {
+  const flushTaps = useCallback(() => {
     const count = tapQueue.current;
     if (count === 0) return;
     tapQueue.current = 0;
-    isSendingRef.current = true;
     setIsSending(true);
 
     // Clear interval if running
@@ -75,37 +72,24 @@ export default function HomePage() {
       intervalTimer.current = null;
     }
 
-    try {
-      const res = await fetch("/api/tap", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ count, color: userColor }),
-      });
+    sendTap({
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      count,
+      color: userColor,
+    });
 
-      if (res.ok) {
-        const data = await res.json();
-        setWeeklyCount(data.weeklyCount);
-      } else {
-        setWeeklyCount((c) => c - count);
-      }
-    } catch {
-      setWeeklyCount((c) => c - count);
-    } finally {
-      setIsSending(false);
-      setTimeout(() => {
-        isSendingRef.current = false;
-      }, 500);
-    }
-  }, [userColor]);
+    setIsSending(false);
+  }, [userColor, sendTap]);
 
   const handleTap = () => {
     spawnHearts(1, userColor);
     setWeeklyCount((c) => c + 1); 
     tapQueue.current += 1;
 
-    // Debounce: flush after 300ms of inactivity
+    // Debounce: flush after 20ms of inactivity
     if (flushTimer.current) clearTimeout(flushTimer.current);
-    flushTimer.current = setTimeout(flushTaps, 300);
+    flushTimer.current = setTimeout(flushTaps, 20);
 
     // Interval cap: flush every 1s during sustained tapping
     if (!intervalTimer.current) {
@@ -116,7 +100,7 @@ export default function HomePage() {
   return (
     <main className="relative flex flex-1 flex-col items-center justify-center overflow-hidden">
       <FloatingHearts hearts={hearts} />
-      <ImageOverlay image={image} />
+      <ImageOverlay images={images} />
 
       <div className="flex flex-col items-center gap-8">
         <div className="text-center">
@@ -131,7 +115,7 @@ export default function HomePage() {
 
         <LoveMeter count={weeklyCount} goal={goal} />
 
-        <CameraCapture disabled={!connected} />
+        <CameraCapture disabled={!connected} sendImage={sendImage} />
       </div>
     </main>
   );
