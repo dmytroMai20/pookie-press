@@ -17,7 +17,6 @@ export interface TapEventData {
 export interface ImageEventData {
   imageId: string;
   url: string;
-  displaySeconds: number;
   timestamp: string;
 }
 

@@ -1,6 +1,5 @@
 import type { ImageRepository } from "@/ports/ImageRepository";
 import type { StorageGateway } from "@/ports/StorageGateway";
-import type { RealtimeGateway } from "@/ports/RealtimeGateway";
 import type { ImageSnap } from "@/domain/models/ImageSnap";
 
 const IMAGE_RETENTION_DAYS = 7;
@@ -16,15 +15,20 @@ export interface ConfirmInput {
   s3Key: string;
   contentType: string;
   sizeBytes: number;
-  displaySeconds: number;
   userId?: string;
+}
+
+export interface ConfirmResult {
+  snap: ImageSnap;
+  imageId: string;
+  url: string;
+  timestamp: string;
 }
 
 export class ImageService {
   constructor(
     private readonly imageRepository: ImageRepository,
-    private readonly storage: StorageGateway,
-    private readonly realtimeGateway: RealtimeGateway
+    private readonly storage: StorageGateway
   ) {}
 
   async createUploadUrl(
@@ -44,7 +48,7 @@ export class ImageService {
     return { uploadUrl, s3Key };
   }
 
-  async confirmAndBroadcast(input: ConfirmInput): Promise<ImageSnap> {
+  async confirmUpload(input: ConfirmInput): Promise<ConfirmResult> {
     const now = new Date();
     const expiresAt = new Date(now);
     expiresAt.setDate(expiresAt.getDate() + IMAGE_RETENTION_DAYS);
@@ -60,14 +64,12 @@ export class ImageService {
 
     const url = await this.storage.getSignedUrl(input.s3Key, PRESIGNED_URL_EXPIRY_SECONDS);
 
-    await this.realtimeGateway.broadcastImage({
+    return {
+      snap,
       imageId: snap.id,
       url,
-      displaySeconds: input.displaySeconds,
       timestamp: now.toISOString(),
-    });
-
-    return snap;
+    };
   }
 
   async getRecentImages(limit: number = 10): Promise<ImageSnap[]> {
