@@ -3,13 +3,20 @@ import type { TapRepository } from "@/ports/TapRepository";
 import type { RealtimeGateway } from "@/ports/RealtimeGateway";
 import type { CachePort } from "@/ports/CachePort";
 
+function getISOWeekNumber(date: Date): number {
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+}
+
 function getWeekKey(): string {
   const now = new Date();
-  const startOfYear = Date.UTC(now.getUTCFullYear(), 0, 1);
-  const dayOfYear = Math.floor((now.getTime() - startOfYear) / 86400000);
-  const startDay = new Date(startOfYear).getUTCDay();
-  const weekNumber = Math.ceil((dayOfYear + startDay + 1) / 7);
-  return `weekly_taps:${now.getUTCFullYear()}:w${weekNumber}`;
+  const week = getISOWeekNumber(now);
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const year = d.getUTCFullYear();
+  return `weekly_taps:${year}:w${week}`;
 }
 
 function getStartOfWeek(): Date {
